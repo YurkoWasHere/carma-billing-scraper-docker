@@ -3,8 +3,8 @@ version: '3.8'
 services:
   power-api:
     # Use the pre-built image from GitHub Container Registry
-    image: ghcr.io/${GITHUB_REPOSITORY:-yourusername/carman-power-scraper}:latest
-    container_name: carman-power-api
+    image: ghcr.io/${GITHUB_REPOSITORY:-yourusername/carma-power-scraper}:latest
+    container_name: carma-power-api
     restart: unless-stopped
     ports:
       - "5000:5000"

@@ -7,7 +7,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
-COPY carman_scraper.py .
+COPY carma_scraper.py .
 COPY home_assistant_api.py .
 COPY query_power_data.py .
 

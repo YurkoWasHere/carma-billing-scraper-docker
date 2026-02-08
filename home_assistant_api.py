@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Home Assistant Integration API for Carman Power Consumption Data
+Home Assistant Integration API for Carma Power Consumption Data
 Provides REST API endpoints for Home Assistant to fetch power consumption data
 """
 
@@ -49,7 +49,7 @@ def update_data_from_scraper():
     try:
         logger.info("Running scraper to update data...")
         result = subprocess.run(
-            ['python3', 'carman_scraper.py', '--months', '1'],
+            ['python3', 'carma_scraper.py', '--months', '1'],
             capture_output=True,
             text=True
         )

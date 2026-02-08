@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Carman Smart Metering Historical Data Scraper
+Carma Smart Metering Historical Data Scraper
 Navigates through previous months to collect all historical consumption data
 """
 
@@ -17,7 +17,7 @@ import time
 import argparse
 
 
-class CarmanHistoricalScraper:
+class CarmaHistoricalScraper:
     def __init__(self, username, password, db_path='power_consumption.db'):
         self.username = username
         self.password = password
@@ -409,43 +409,52 @@ class CarmanHistoricalScraper:
                 for date_str, consumption in zip(data['dates'], data['consumption']):
                     date_obj = self.parse_date(date_str, data['year'])
                     if date_obj:
-                        # Check if record exists
+                        # Check if record exists and get current value
                         cursor.execute('''
-                            SELECT id FROM daily_consumption 
+                            SELECT id, consumption_kwh FROM daily_consumption 
                             WHERE consumption_date = ? AND location = ?
                         ''', (date_obj.date(), data['location']))
                         
-                        exists = cursor.fetchone()
+                        existing = cursor.fetchone()
                         
-                        if exists:
-                            # Update existing record
-                            cursor.execute('''
-                                UPDATE daily_consumption 
-                                SET consumption_kwh = ?, month = ?, year = ?, 
-                                    updated_at = CURRENT_TIMESTAMP
-                                WHERE consumption_date = ? AND location = ?
-                            ''', (
-                                consumption,
-                                data['month'],
-                                data['year'],
-                                date_obj.date(),
-                                data['location']
-                            ))
-                            updated_count += 1
+                        if existing:
+                            existing_id, existing_consumption = existing
+                            
+                            # Never update to 0, and only update if value has changed
+                            if consumption > 0 and consumption != existing_consumption:
+                                # Update existing record with new value
+                                cursor.execute('''
+                                    UPDATE daily_consumption 
+                                    SET consumption_kwh = ?, month = ?, year = ?, 
+                                        updated_at = CURRENT_TIMESTAMP
+                                    WHERE id = ?
+                                ''', (
+                                    consumption,
+                                    data['month'],
+                                    data['year'],
+                                    existing_id
+                                ))
+                                updated_count += 1
+                            # If new value is 0 and existing value is non-zero, keep existing
+                            elif consumption == 0 and existing_consumption > 0:
+                                # Skip update, keep existing non-zero value
+                                pass
                         else:
-                            # Insert new record
-                            cursor.execute('''
-                                INSERT INTO daily_consumption 
-                                (consumption_date, consumption_kwh, location, month, year)
-                                VALUES (?, ?, ?, ?, ?)
-                            ''', (
-                                date_obj.date(),
-                                consumption,
-                                data['location'],
-                                data['month'],
-                                data['year']
-                            ))
-                            saved_count += 1
+                            # Only insert new record if consumption is not 0
+                            if consumption > 0:
+                                # Insert new record
+                                cursor.execute('''
+                                    INSERT INTO daily_consumption 
+                                    (consumption_date, consumption_kwh, location, month, year)
+                                    VALUES (?, ?, ?, ?, ?)
+                                ''', (
+                                    date_obj.date(),
+                                    consumption,
+                                    data['location'],
+                                    data['month'],
+                                    data['year']
+                                ))
+                                saved_count += 1
                 
                 # Save or update monthly summary
                 cursor.execute('''
@@ -680,7 +689,7 @@ def main():
         return
     
     # Run historical scraper
-    scraper = CarmanHistoricalScraper(username, password, args.db)
+    scraper = CarmaHistoricalScraper(username, password, args.db)
     scraper.scrape_historical_data(
         months_back=args.months,
         stop_on_empty=not args.no_stop,

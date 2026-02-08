@@ -1,6 +1,6 @@
-# Home Assistant Integration for Carman Power Consumption
+# Home Assistant Integration for Carma Power Consumption
 
-This integration allows you to monitor your Carman Smart Metering power consumption data in Home Assistant.
+This integration allows you to monitor your Carma Smart Metering power consumption data in Home Assistant.
 
 ## Features
 
@@ -31,7 +31,7 @@ PASSWORD=your_meter_password
 
 Run the scraper to collect historical data:
 ```bash
-python carman_scraper.py --months 12
+python carma_scraper.py --months 12
 ```
 
 ### 4. Start the API Server
@@ -144,7 +144,7 @@ Use Home Assistant UI to adjust:
 
 2. **Update not working**:
    - Check .env credentials are correct
-   - Verify scraper works: `python carman_scraper.py --months 1`
+   - Verify scraper works: `python carma_scraper.py --months 1`
    - Check API logs: `docker-compose logs`
 
 3. **High memory usage**:

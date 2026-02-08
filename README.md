@@ -1,10 +1,10 @@
-# Carman Smart Metering Power Consumption Scraper
+# Carma Smart Metering Power Consumption Scraper
 
-A Python-based scraper for Carman Smart Metering portal that collects power consumption data and integrates with Home Assistant for real-time monitoring and analysis.
+A Python-based scraper for Carma Smart Metering portal that collects power consumption data and integrates with Home Assistant for real-time monitoring and analysis.
 
 ## 🚀 Features
 
-- **Automated Data Collection**: Scrape daily power consumption data from Carman Smart Metering portal
+- **Automated Data Collection**: Scrape daily power consumption data from Carma Smart Metering portal
 - **Historical Data**: Collect up to 20 years of historical consumption data
 - **SQLite Database**: Local storage of all consumption data
 - **Home Assistant Integration**: REST API for real-time monitoring
@@ -15,15 +15,15 @@ A Python-based scraper for Carman Smart Metering portal that collects power cons
 ## 📋 Requirements
 
 - Python 3.8+
-- Carman Smart Metering account credentials
+- Carma Smart Metering account credentials
 - Home Assistant (optional, for integration)
 
 ## 🛠️ Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/carman-power-scraper.git
-cd carman-power-scraper
+git clone https://github.com/yourusername/carma-power-scraper.git
+cd carma-power-scraper
 ```
 
 2. Install dependencies:
@@ -51,12 +51,12 @@ PASSWORD=your_password
 
 #### Collect current month data:
 ```bash
-python carman_scraper.py --months 1
+python carma_scraper.py --months 1
 ```
 
 #### Collect historical data (with pauses):
 ```bash
-python carman_scraper.py --months 240 --pause-interval 6 --pause-duration 30
+python carma_scraper.py --months 240 --pause-interval 6 --pause-duration 30
 ```
 
 #### Options:
@@ -134,7 +134,7 @@ docker-compose up -d
 
 ```bash
 # Set your GitHub repository name
-export GITHUB_REPOSITORY=yourusername/carman-power-scraper
+export GITHUB_REPOSITORY=yourusername/carma-power-scraper
 
 # Use the pre-built image
 docker-compose -f docker-compose.ghcr.yml up -d
@@ -168,8 +168,8 @@ The SQLite database contains:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `USERNAME` | (required) | Your Carman meter number |
-| `PASSWORD` | (required) | Your Carman password |
+| `USERNAME` | (required) | Your Carma meter number |
+| `PASSWORD` | (required) | Your Carma password |
 | `API_HOST` | 0.0.0.0 | API server host |
 | `API_PORT` | 5000 | API server port |
 | `DB_PATH` | power_consumption.db | Database file path |
@@ -185,8 +185,8 @@ The SQLite database contains:
 ## 📝 Project Structure
 
 ```
-carman-power-scraper/
-├── carman_scraper.py           # Main scraper with historical support
+carma-power-scraper/
+├── carma_scraper.py           # Main scraper with historical support
 ├── query_power_data.py          # Database query utility
 ├── home_assistant_api.py        # REST API server
 ├── home_assistant_config.yaml   # HA sensor configuration
@@ -250,7 +250,7 @@ MIT License - See LICENSE file for details
 
 ## 🙏 Acknowledgments
 
-- Built for Carman Smart Metering portal
+- Built for Carma Smart Metering portal
 - Integrates with Home Assistant
 - Uses Highcharts data extraction
 
@@ -263,4 +263,4 @@ For issues or questions:
 
 ---
 
-**Note**: This tool is for personal use with your own Carman Smart Metering account. Respect the service's terms of use and rate limits.
+**Note**: This tool is for personal use with your own Carma Smart Metering account. Respect the service's terms of use and rate limits.

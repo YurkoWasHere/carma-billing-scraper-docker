@@ -1,0 +1,43 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          echo "## What's Changed" > changelog.md
+          git log --pretty=format:"* %s (%h)" $(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD >> changelog.md
+          echo "" >> changelog.md
+          echo "## Docker Image" >> changelog.md
+          echo "Pull the image:" >> changelog.md
+          echo '```bash' >> changelog.md
+          echo "docker pull ghcr.io/${{ github.repository }}:${{ github.ref_name }}" >> changelog.md
+          echo '```' >> changelog.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: changelog.md
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
+          files: |
+            README.md
+            requirements.txt
+            docker-compose.yml
+            docker-compose.ghcr.yml
+            .env.example

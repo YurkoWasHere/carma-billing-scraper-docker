@@ -1,0 +1,180 @@
+# Home Assistant Configuration for Carman Power Consumption
+# Add this to your Home Assistant configuration.yaml file
+
+# REST Sensors for Power Consumption Data
+sensor:
+  # Current consumption sensors
+  - platform: rest
+    name: "Power Consumption Today"
+    resource: "http://YOUR_SERVER_IP:5000/api/current"
+    value_template: "{{ value_json.today_kwh | float(0) }}"
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    scan_interval: 3600  # Update every hour
+    json_attributes:
+      - yesterday_kwh
+      - month_total_kwh
+      - meter_reading
+      - meter_reading_date
+
+  - platform: rest
+    name: "Power Consumption Yesterday"
+    resource: "http://YOUR_SERVER_IP:5000/api/current"
+    value_template: "{{ value_json.yesterday_kwh | float(0) }}"
+    unit_of_measurement: "kWh"
+    device_class: energy
+    scan_interval: 3600
+
+  - platform: rest
+    name: "Power Consumption Month Total"
+    resource: "http://YOUR_SERVER_IP:5000/api/current"
+    value_template: "{{ value_json.month_total_kwh | float(0) }}"
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    scan_interval: 3600
+
+  - platform: rest
+    name: "Power Meter Reading"
+    resource: "http://YOUR_SERVER_IP:5000/api/current"
+    value_template: "{{ value_json.meter_reading | float(0) }}"
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    scan_interval: 3600
+
+  # Statistics sensor
+  - platform: rest
+    name: "Power Consumption Stats"
+    resource: "http://YOUR_SERVER_IP:5000/api/statistics"
+    value_template: "{{ value_json.average_daily_kwh | float(0) | round(2) }}"
+    unit_of_measurement: "kWh"
+    scan_interval: 7200  # Update every 2 hours
+    json_attributes:
+      - total_days
+      - total_consumption_kwh
+      - max_daily_kwh
+      - min_daily_kwh
+      - highest_day
+      - lowest_day
+      - date_range
+
+# Template sensors for calculated values
+template:
+  - sensor:
+    - name: "Power Daily Average This Month"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state: >
+        {% set month_total = states('sensor.power_consumption_month_total') | float(0) %}
+        {% set day_of_month = now().day %}
+        {{ (month_total / day_of_month) | round(2) }}
+
+    - name: "Power Consumption Trend"
+      state: >
+        {% set today = states('sensor.power_consumption_today') | float(0) %}
+        {% set yesterday = states('sensor.power_consumption_yesterday') | float(0) %}
+        {% if today > yesterday * 1.1 %}
+          increasing
+        {% elif today < yesterday * 0.9 %}
+          decreasing
+        {% else %}
+          stable
+        {% endif %}
+      icon: >
+        {% set today = states('sensor.power_consumption_today') | float(0) %}
+        {% set yesterday = states('sensor.power_consumption_yesterday') | float(0) %}
+        {% if today > yesterday * 1.1 %}
+          mdi:trending-up
+        {% elif today < yesterday * 0.9 %}
+          mdi:trending-down
+        {% else %}
+          mdi:trending-neutral
+        {% endif %}
+
+    - name: "Power Cost Today"
+      unit_of_measurement: "$"
+      device_class: monetary
+      state: >
+        {% set kwh = states('sensor.power_consumption_today') | float(0) %}
+        {% set rate = 0.12 %}  # Adjust your rate per kWh
+        {{ (kwh * rate) | round(2) }}
+
+    - name: "Power Cost This Month"
+      unit_of_measurement: "$"
+      device_class: monetary
+      state: >
+        {% set kwh = states('sensor.power_consumption_month_total') | float(0) %}
+        {% set rate = 0.12 %}  # Adjust your rate per kWh
+        {{ (kwh * rate) | round(2) }}
+
+# Note: Data is automatically updated daily at 5 AM by the API server
+# This automation is optional - only if you want to trigger manual updates
+automation:
+  - alias: "Refresh Power Consumption Sensors"
+    description: "Refresh sensor data after automatic update"
+    trigger:
+      - platform: time
+        at: "05:05:00"  # Run 5 minutes after automatic update
+    action:
+      - service: homeassistant.update_entity
+        entity_id:
+          - sensor.power_consumption_today
+          - sensor.power_consumption_yesterday
+          - sensor.power_consumption_month_total
+          - sensor.power_meter_reading
+
+# REST command to trigger update
+rest_command:
+  update_power_data:
+    url: "http://YOUR_SERVER_IP:5000/api/update"
+    method: POST
+
+# Utility Meter for tracking cycles
+utility_meter:
+  daily_energy:
+    source: sensor.power_consumption_today
+    cycle: daily
+    
+  weekly_energy:
+    source: sensor.power_consumption_today
+    cycle: weekly
+    
+  monthly_energy:
+    source: sensor.power_consumption_month_total
+    cycle: monthly
+
+# Input numbers for setting thresholds
+input_number:
+  power_daily_target:
+    name: Daily Power Target
+    min: 10
+    max: 100
+    step: 5
+    unit_of_measurement: kWh
+    icon: mdi:target
+
+  power_high_usage_threshold:
+    name: High Usage Alert Threshold
+    min: 20
+    max: 100
+    step: 5
+    unit_of_measurement: kWh
+    icon: mdi:alert
+
+# Alert for high usage
+alert:
+  power_high_usage:
+    name: High Power Usage Alert
+    entity_id: sensor.power_consumption_today
+    state: >
+      {{ states('sensor.power_consumption_today') | float(0) > 
+         states('input_number.power_high_usage_threshold') | float(50) }}
+    repeat: 
+      - 60
+    can_acknowledge: true
+    skip_first: false
+    message: >
+      Power consumption today is {{ states('sensor.power_consumption_today') }} kWh,
+      exceeding threshold of {{ states('input_number.power_high_usage_threshold') }} kWh

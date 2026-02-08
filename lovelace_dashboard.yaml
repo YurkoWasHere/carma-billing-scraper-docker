@@ -1,0 +1,196 @@
+# Home Assistant Lovelace Dashboard for Power Consumption
+# Add this as a new dashboard or integrate into existing one
+
+title: Power Consumption
+views:
+  - title: Overview
+    path: power-overview
+    icon: mdi:lightning-bolt
+    cards:
+      # Current Status Row
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            entity: sensor.power_consumption_today
+            name: Today
+            min: 0
+            max: 60
+            severity:
+              green: 0
+              yellow: 35
+              red: 50
+            needle: true
+
+          - type: gauge
+            entity: sensor.power_consumption_yesterday
+            name: Yesterday
+            min: 0
+            max: 60
+            severity:
+              green: 0
+              yellow: 35
+              red: 50
+
+          - type: gauge
+            entity: sensor.power_consumption_month_total
+            name: Month Total
+            min: 0
+            max: 1500
+            severity:
+              green: 0
+              yellow: 900
+              red: 1200
+
+      # Statistics Cards
+      - type: horizontal-stack
+        cards:
+          - type: statistic
+            entity: sensor.power_consumption_today
+            stat_type: mean
+            period:
+              days: 7
+            name: 7-Day Average
+
+          - type: statistic
+            entity: sensor.power_consumption_today
+            stat_type: max
+            period:
+              days: 30
+            name: 30-Day Max
+
+          - type: statistic
+            entity: sensor.power_consumption_today
+            stat_type: min
+            period:
+              days: 30
+            name: 30-Day Min
+
+      # Meter Reading Card
+      - type: entities
+        title: Meter Information
+        entities:
+          - entity: sensor.power_meter_reading
+            name: Current Reading
+            icon: mdi:counter
+          - type: attribute
+            entity: sensor.power_consumption_today
+            attribute: meter_reading_date
+            name: Last Updated
+            icon: mdi:calendar-clock
+
+      # Cost Cards
+      - type: horizontal-stack
+        cards:
+          - type: entity
+            entity: sensor.power_cost_today
+            name: Cost Today
+            icon: mdi:currency-usd
+
+          - type: entity
+            entity: sensor.power_cost_this_month
+            name: Month Cost
+            icon: mdi:currency-usd
+
+      # Trend Card
+      - type: entity
+        entity: sensor.power_consumption_trend
+        name: Consumption Trend
+        
+      # Historical Graph
+      - type: history-graph
+        title: Daily Consumption History
+        hours_to_show: 168  # 7 days
+        entities:
+          - entity: sensor.power_consumption_today
+            name: Daily Usage
+
+      # Statistics Card
+      - type: statistics-graph
+        title: Power Consumption Statistics
+        chart_type: line
+        period: month
+        days_to_show: 30
+        stat_types:
+          - mean
+          - max
+          - min
+        entities:
+          - sensor.power_consumption_today
+
+      # Energy Distribution Card
+      - type: energy-distribution
+        title: Energy Distribution
+        link_dashboard: true
+
+  - title: Detailed Stats
+    path: power-details
+    icon: mdi:chart-line
+    cards:
+      # Custom Statistics
+      - type: markdown
+        title: Power Statistics
+        content: |
+          {% set stats = state_attr('sensor.power_consumption_stats', 'json') %}
+          
+          **Overall Statistics:**
+          - Total Days Tracked: {{ state_attr('sensor.power_consumption_stats', 'total_days') }}
+          - Total Consumption: {{ state_attr('sensor.power_consumption_stats', 'total_consumption_kwh') | round(2) }} kWh
+          - Daily Average: {{ states('sensor.power_consumption_stats') }} kWh
+          
+          **Records:**
+          - Highest Day: {{ state_attr('sensor.power_consumption_stats', 'highest_day')['date'] }} 
+            ({{ state_attr('sensor.power_consumption_stats', 'highest_day')['kwh'] }} kWh)
+          - Lowest Day: {{ state_attr('sensor.power_consumption_stats', 'lowest_day')['date'] }}
+            ({{ state_attr('sensor.power_consumption_stats', 'lowest_day')['kwh'] }} kWh)
+          
+          **Date Range:**
+          - From: {{ state_attr('sensor.power_consumption_stats', 'date_range')['first'] }}
+          - To: {{ state_attr('sensor.power_consumption_stats', 'date_range')['last'] }}
+
+      # Monthly Comparison
+      - type: custom:apexcharts-card
+        header:
+          show: true
+          title: Monthly Comparison
+        graph_span: 12month
+        series:
+          - entity: sensor.power_consumption_month_total
+            type: column
+            statistics:
+              type: max
+              period: month
+            group_by:
+              func: last
+              duration: 1month
+
+      # Settings
+      - type: entities
+        title: Settings & Thresholds
+        entities:
+          - input_number.power_daily_target
+          - input_number.power_high_usage_threshold
+
+      # Manual Update Button
+      - type: button
+        name: Update Data Now
+        icon: mdi:refresh
+        tap_action:
+          action: call-service
+          service: rest_command.update_power_data
+
+  - title: Energy Dashboard
+    path: power-energy
+    icon: mdi:flash
+    cards:
+      # Energy cards (if you have solar or other sources)
+      - type: energy-usage-graph
+        title: Energy Usage
+
+      - type: energy-sources-table
+        title: Energy Sources
+
+      - type: energy-solar-graph
+        title: Solar Production
+        
+      - type: energy-devices-graph
+        title: Individual Devices

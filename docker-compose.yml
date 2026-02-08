@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  power-api:
+    build: .
+    container_name: carman-power-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./power_consumption.db:/app/power_consumption.db
+      - ./.env:/app/.env
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=5000
+      - DB_PATH=/app/power_consumption.db
+      - AUTO_UPDATE=true
+      - UPDATE_HOUR=5  # Update at 5 AM daily
+      - USERNAME=${USERNAME}  # From .env file
+      - PASSWORD=${PASSWORD}  # From .env file
+    networks:
+      - homeassistant
+
+networks:
+  homeassistant:
+    external: true
+    name: homeassistant_default  # Use Home Assistant's network

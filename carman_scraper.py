@@ -147,10 +147,88 @@ class CarmanHistoricalScraper:
         if 'graphing.aspx' in response.url:
             print(f"✓ Login successful!")
             self.current_page_html = response.text
+            
+            # Check if we need to navigate to current month
+            self.navigate_to_current_month()
+            
             return True
         else:
             print("✗ Login failed")
             return False
+    
+    def navigate_to_current_month(self):
+        """Navigate to the current month if Next Month button is available"""
+        try:
+            soup = BeautifulSoup(self.current_page_html, 'html.parser')
+            
+            # Check if Next Month button exists and is enabled
+            next_month_btn = soup.find('input', {'name': 'nextMonth_btn'})
+            
+            if next_month_btn:
+                # Check if button is disabled (some sites add disabled attribute)
+                if not next_month_btn.get('disabled'):
+                    print("  → Next Month button found, navigating to current month...")
+                    
+                    # Keep clicking next month until it's disabled or we reach current month
+                    attempts = 0
+                    max_attempts = 12  # Don't navigate more than 12 months forward
+                    
+                    while attempts < max_attempts:
+                        # Check current displayed month
+                        current_display = self.extract_current_month(self.current_page_html)
+                        if current_display:
+                            current_year = current_display[1]
+                            current_month_name = current_display[0]
+                            
+                            # Check if we're at current actual month
+                            from datetime import datetime
+                            now = datetime.now()
+                            months = ['January', 'February', 'March', 'April', 'May', 'June',
+                                    'July', 'August', 'September', 'October', 'November', 'December']
+                            
+                            if current_year == now.year and current_month_name == months[now.month - 1]:
+                                print(f"  ✓ Already at current month: {current_month_name} {current_year}")
+                                break
+                        
+                        # Try to navigate forward
+                        asp_fields = self.get_asp_net_fields(self.current_page_html)
+                        postback_data = {
+                            **asp_fields,
+                            'nextMonth_btn': 'Next Month',
+                            '__EVENTTARGET': '',
+                            '__EVENTARGUMENT': ''
+                        }
+                        
+                        response = self.session.post(
+                            self.graphing_url,
+                            data=postback_data,
+                            headers={
+                                'Referer': self.graphing_url,
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            }
+                        )
+                        
+                        if response.status_code == 200:
+                            self.current_page_html = response.text
+                            
+                            # Check if next button is now disabled
+                            soup = BeautifulSoup(self.current_page_html, 'html.parser')
+                            next_month_btn = soup.find('input', {'name': 'nextMonth_btn'})
+                            
+                            if not next_month_btn or next_month_btn.get('disabled'):
+                                print(f"  ✓ Reached most recent month available")
+                                break
+                                
+                            attempts += 1
+                        else:
+                            print(f"  ⚠️ Could not navigate forward")
+                            break
+                            
+                    if attempts >= max_attempts:
+                        print(f"  ⚠️ Stopped after {max_attempts} attempts")
+                        
+        except Exception as e:
+            print(f"  ⚠️ Error navigating to current month: {e}")
     
     def navigate_to_previous_month(self, retry_on_500=True):
         """Click the 'Previous Month' button to navigate to earlier data"""
